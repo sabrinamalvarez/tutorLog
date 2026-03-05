@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tutor Weekly Session Log</title>
+<style>
+  :root {
+    --brand: #4F46E5;
+    --brand-light: #EEF2FF;
+    --brand-dark: #3730A3;
+    --success: #10B981;
+    --danger: #EF4444;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-400: #9CA3AF;
+    --gray-600: #4B5563;
+    --gray-800: #1F2937;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%);
+    min-height: 100vh;
+    padding: 32px 16px;
+    color: var(--gray-800);
+  }
+  .container { max-width: 700px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 28px; }
+  .header h1 { font-size: 1.8rem; font-weight: 700; color: var(--brand-dark); }
+  .header p { color: var(--gray-600); margin-top: 6px; font-size: 0.95rem; }
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--brand-dark);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon {
+    background: var(--brand-light);
+    color: var(--brand);
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    margin-bottom: 5px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: var(--gray-800);
+    background: var(--gray-50);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    background: white;
+  }
+  textarea { resize: vertical; min-height: 64px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .field { margin-bottom: 14px; }
+
+  /* Week day selector */
+  .date-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .day-btn {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 4px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--gray-50);
+    transition: all 0.18s;
+    font-size: 0.78rem;
+    color: var(--gray-600);
+  }
+  .day-btn .day-label { font-weight: 700; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .day-btn .day-num { font-size: 1rem; font-weight: 600; color: var(--gray-800); }
+  .day-btn.active { border-color: var(--brand); background: var(--brand-light); }
+  .day-btn.active .day-num { color: var(--brand-dark); }
+  .day-btn:hover:not(.active) { border-color: var(--brand); background: #F5F3FF; }
+  .day-btn.has-sessions::after {
+    content: '';
+    display: block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    margin-top: 4px;
+  }
+
+  /* Session panels */
+  .day-panel { display: none; animation: fadeIn 0.22s ease; }
+  .day-panel.open { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  .day-panel-header {
+    font-size: 0.95rem; font-weight: 700; color: var(--brand-dark);
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1.5px solid var(--gray-200);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .close-day { background: none; border: none; cursor: pointer; color: var(--gray-400); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; }
+  .close-day:hover { color: var(--danger); background: #FEF2F2; }
+
+  .session-block {
+    border: 1.5px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--gray-50);
+  }
+  .session-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .session-num { font-size: 0.78rem; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 0.05em; }
+  .remove-btn {
+    background: none; border: none; color: var(--gray-400);
+    cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .remove-btn:hover { color: var(--danger); background: #FEF2F2; }
+  .add-session-btn {
+    width: 100%; padding: 10px;
+    border: 1.5px dashed var(--brand);
+    border-radius: 8px;
+    background: var(--brand-light);
+    color: var(--brand-dark);
+    font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+    margin-top: 4px;
+  }
+  .add-session-btn:hover { background: #E0E7FF; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-slider {
+    position: absolute; inset: 0;
+    background: var(--gray-200);
+    border-radius: 999px; cursor: pointer; transition: background 0.2s;
+  }
+  .toggle-slider::after {
+    content: ''; position: absolute;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; top: 3px; left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle input:checked + .toggle-slider { background: var(--brand); }
+  .toggle input:checked + .toggle-slider::after { transform: translateX(20px); }
+  .toggle-label { font-size: 0.88rem; font-weight: 500; color: var(--gray-600); text-transform: none; letter-spacing: 0; margin-bottom: 0; }
+
+  /* Duration auto display */
+  .dur-badge {
+    display: inline-block;
+    background: var(--brand-light);
+    color: var(--brand-dark);
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-left: 8px;
+  }
+
+  /* Summary table */
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 16px; }
+  .summary-table th {
+    background: var(--brand-light); color: var(--brand-dark);
+    font-weight: 700; padding: 8px 10px; text-align: left;
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .summary-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .totals-box {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; background: var(--brand-light);
+    border-radius: 8px; margin-bottom: 8px;
+  }
+  .totals-box .t-label { font-size: 0.85rem; font-weight: 600; color: var(--gray-600); }
+  .totals-box .t-value { font-size: 1rem; font-weight: 700; color: var(--brand-dark); }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+  .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.18s; }
+  .btn-secondary { background: var(--gray-100); color: var(--gray-800); }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+
+  #summary-section { display: none; }
+  .empty-state { text-align: center; color: var(--gray-400); font-size: 0.88rem; padding: 20px; }
+  .hint { font-size: 0.8rem; color: var(--gray-400); margin-top: 4px; }
+
+  @media (max-width: 520px) {
+    .row { grid-template-columns: 1fr; }
+    .row.three { grid-template-columns: 1fr 1fr; }
+    .date-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>📋 Weekly Session Log</h1>
+    <p>Fill this out once at the end of your week. Select only the days you worked.</p>
+  </div>
+
+  <!-- Tutor Info -->
+  <div class="card">
+    <div class="card-title"><span class="icon">👤</span> Your Info</div>
+    <div class="row">
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="tutor-name" placeholder="Full name" />
+      </div>
+      <div class="field">
+        <label>Week Starting</label>
+        <input type="date" id="week-of" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Day Selector -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📅</span> Days Worked</div>
+    <p class="hint" style="margin-bottom:14px;">Tap a day to open its session log. Tap again to close.</p>
+    <div class="date-grid" id="date-grid"></div>
+  </div>
+
+  <!-- Dynamic Day Panels -->
+  <div id="session-panels"></div>
+
+  <!-- Export -->
+  <div class="card">
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="generateSummary()">👁 Preview</button>
+      <button class="btn btn-success" onclick="exportCSV()">⬇ Export to CSV</button>
+    </div>
+    <p class="hint" style="margin-top:10px;text-align:center;">Export opens in Google Sheets — all hours auto-calculated for your CEO.</p>
+  </div>
+
+  <!-- Summary Preview -->
+  <div class="card" id="summary-section">
+    <div class="card-title"><span class="icon">📊</span> Weekly Summary</div>
+    <div id="summary-body"></div>
+  </div>
+
+</div>
+
+<script>
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const activeDays = new Set();
+  const sessionData = {};
+
+  // ── Week dates ──────────────────────────────────────────────────
+  function getWeekDates() {
+    const val = document.getElementById('week-of').value;
+    const base = val ? new Date(val + 'T00:00:00') : (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - d.getDay());
+      return d;
+    })();
+    return Array.from({length: 7}, (_, i) => {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      return d;
+    });
+  }
+
+  function fmt(d) { return d.toISOString().split('T')[0]; }
+
+  function fmt12(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+
+  // ── Date grid ────────────────────────────────────────────────────
+  function renderDateGrid() {
+    const grid = document.getElementById('date-grid');
+    grid.innerHTML = '';
+    getWeekDates().forEach(d => {
+      const key = fmt(d);
+      const btn = document.createElement('button');
+      const hasSessions = sessionData[key] && sessionData[key].length > 0;
+      btn.className = 'day-btn' + (activeDays.has(key) ? ' active' : '') + (hasSessions ? ' has-sessions' : '');
+      btn.innerHTML = `<span class="day-label">${DAYS[d.getDay()]}</span><span class="day-num">${d.getDate()}</span>`;
+      btn.id = 'daybtn-' + key;
+      btn.onclick = () => toggleDay(key, d);
+      grid.appendChild(btn);
+    });
+  }
+
+  function toggleDay(key, d) {
+    const panel = document.getElementById('panel-' + key);
+    if (activeDays.has(key)) {
+      activeDays.delete(key);
+      if (panel) { panel.classList.remove('open'); setTimeout(() => panel.remove(), 220); }
+    } else {
+      activeDays.add(key);
+      if (!sessionData[key]) sessionData[key] = [];
+      if (!panel) buildDayPanel(key, d);
+      else document.getElementById('panel-' + key).classList.add('open');
+    }
+    refreshDayBtn(key);
+  }
+
+  function refreshDayBtn(key) {
+    const btn = document.getElementById('daybtn-' + key);
+    if (!btn) return;
+    const active = activeDays.has(key);
+    const hasSessions = sessionData[key] && sessionData[key].length > 0;
+    btn.className = 'day-btn' + (active ? ' active' : '') + (hasSessions ? ' has-sessions' : '');
+  }
+
+  // ── Day panel ────────────────────────────────────────────────────
+  function buildDayPanel(key, d) {
+    const label = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+    const container = document.getElementById('session-panels');
+    const div = document.createElement('div');
+    div.className = 'card day-panel open';
+    div.id = 'panel-' + key;
+    div.innerHTML = `
+      <div class="day-panel-header">
+        <span>📆 ${label}</span>
+        <button class="close-day" onclick="toggleDay('${key}', new Date('${key}T00:00:00'))" title="Close">✕</button>
+      </div>
+      <div class="sessions-wrapper" id="sessions-${key}"></div>
+      <button class="add-session-btn" onclick="addSession('${key}')">＋ Add Another Session</button>
+    `;
+    container.appendChild(div);
+    if (sessionData[key].length === 0) addSession(key);
+    else sessionData[key].forEach((_, i) => renderSession(key, i));
+  }
+
+  // ── Sessions ─────────────────────────────────────────────────────
+  function addSession(key) {
+    const idx = sessionData[key].length;
+    sessionData[key].push({ student: '', start: '', end: '', travel: false, notes: '' });
+    renderSession(key, idx);
+    refreshDayBtn(key);
+  }
+
+  function renderSession(key, idx) {
+    const wrapper = document.getElementById('sessions-' + key);
+    const existing = document.getElementById(`sess-${key}-${idx}`);
+    if (existing) existing.remove();
+
+    const s = sessionData[key][idx];
+    const block = document.createElement('div');
+    block.className = 'session-block';
+    block.id = `sess-${key}-${idx}`;
+
+    block.innerHTML = `
+      <div class="session-header">
+        <span class="session-num">Session ${idx + 1}<span id="dur-badge-${key}-${idx}" class="dur-badge" style="display:${s.start&&s.end?'inline':'none'}">${calcDurLabel(s.start,s.end)}</span></span>
+        ${idx > 0 ? `<button class="remove-btn" onclick="removeSession('${key}',${idx})">✕ Remove</button>` : ''}
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Student Name</label>
+          <input type="text" placeholder="Student's name" value="${s.student}"
+            oninput="upd('${key}',${idx},'student',this.value)" />
+        </div>
+        <div class="field" style="display:flex;flex-direction:column;justify-content:flex-end;">
+          <div class="toggle-row" style="margin-bottom:0;padding-top:22px;">
+            <label class="toggle">
+              <input type="checkbox" ${s.travel?'checked':''}
+                onchange="upd('${key}',${idx},'travel',this.checked)" />
+              <span class="toggle-slider"></span>
+            </label>
+            <label class="toggle-label">In-person session (travel fee applies)</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row three">
+        <div class="field">
+          <label>Start Time</label>
+          <input type="time" value="${s.start}"
+            oninput="upd('${key}',${idx},'start',this.value);updateDur('${key}',${idx})" />
+        </div>
+        <div class="field">
+          <label>End Time</label>
+          <input type="time" value="${s.end}"
+            oninput="upd('${key}',${idx},'end',this.value);updateDur('${key}',${idx})" />
+        </div>
+        <div class="field">
+          <label>Duration</label>
+          <input type="text" id="dur-display-${key}-${idx}" readonly
+            value="${calcDurLabel(s.start,s.end)}"
+            placeholder="Auto-filled"
+            style="background:var(--gray-100);color:var(--gray-600);cursor:default;" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Notes / Comments</label>
+        <textarea placeholder="e.g. Student struggled with fractions, brought workbooks, makeup session…" oninput="upd('${key}',${idx},'notes',this.value)">${s.notes}</textarea>
+      </div>
+    `;
+    wrapper.appendChild(block);
+  }
+
+  function upd(key, idx, field, val) {
+    sessionData[key][idx][field] = val;
+  }
+
+  function updateDur(key, idx) {
+    const s = sessionData[key][idx];
+    const label = calcDurLabel(s.start, s.end);
+    const display = document.getElementById(`dur-display-${key}-${idx}`);
+    const badge = document.getElementById(`dur-badge-${key}-${idx}`);
+    if (display) display.value = label;
+    if (badge) { badge.textContent = label; badge.style.display = label ? 'inline' : 'none'; }
+  }
+
+  function removeSession(key, idx) {
+    sessionData[key].splice(idx, 1);
+    const wrapper = document.getElementById('sessions-' + key);
+    wrapper.innerHTML = '';
+    sessionData[key].forEach((_, i) => renderSession(key, i));
+    refreshDayBtn(key);
+  }
+
+  // ── Duration helpers ─────────────────────────────────────────────
+  function calcMins(start, end) {
+    if (!start || !end) return 0;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+  }
+
+  function calcDurLabel(start, end) {
+    const mins = calcMins(start, end);
+    if (!mins) return '';
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h > 0 ? `${h}h${m > 0 ? ' ' + m + 'm' : ''}` : `${m}m`;
+  }
+
+  function calcHours(start, end) {
+    return calcMins(start, end) / 60;
+  }
+
+  // ── Collect all rows ─────────────────────────────────────────────
+  function collectRows() {
+    const rows = [];
+    [...activeDays].sort().forEach(key => {
+      (sessionData[key] || []).forEach(s => {
+        rows.push({
+          date: key,
+          student: s.student || '—',
+          start: s.start,
+          end: s.end,
+          hours: calcHours(s.start, s.end),
+          durLabel: calcDurLabel(s.start, s.end) || '—',
+          travel: s.travel,
+          notes: s.notes || ''
+        });
+      });
+    });
+    return rows;
+  }
+
+  // ── Summary preview ──────────────────────────────────────────────
+  function generateSummary() {
+    const name = document.getElementById('tutor-name').value.trim() || 'Tutor';
+    const rows = collectRows();
+    const section = document.getElementById('summary-section');
+    const body = document.getElementById('summary-body');
+
+    if (rows.length === 0) {
+      body.innerHTML = '<div class="empty-state">No sessions logged yet. Select days and fill in your sessions above.</div>';
+      section.style.display = 'block';
+      section.scrollIntoView({behavior:'smooth'});
+      return;
+    }
+
+    let totalHrs = 0, travelCount = 0;
+    const trs = rows.map(r => {
+      totalHrs += r.hours;
+      if (r.travel) travelCount++;
+      return `<tr>
+        <td>${r.date}</td>
+        <td>${r.student}</td>
+        <td>${fmt12(r.start)} – ${fmt12(r.end)}</td>
+        <td>${r.durLabel}</td>
+        <td style="text-align:center">${r.travel ? '✅' : '—'}</td>
+        <td style="color:var(--gray-600);font-size:0.82rem;">${r.notes || '—'}</td>
+      </tr>`;
+    }).join('');
+
+    body.innerHTML = `
+      <table class="summary-table">
+        <thead><tr>
+          <th>Date</th><th>Student</th><th>Time</th><th>Duration</th><th>Travel</th><th>Notes</th>
+        </tr></thead>
+        <tbody>${trs}</tbody>
+      </table>
+      <div class="totals-box"><span class="t-label">Tutor</span><span class="t-value">${name}</span></div>
+      <div class="totals-box"><span class="t-label">Total Sessions</span><span class="t-value">${rows.length}</span></div>
+      <div class="totals-box"><span class="t-label">Total Hours</span><span class="t-value">${totalHrs.toFixed(2)} hrs</span></div>
+      <div class="totals-box"><span class="t-label">In-Person Sessions (travel fee)</span><span class="t-value">${travelCount}</span></div>
+    `;
+    section.style.display = 'block';
+    section.scrollIntoView({behavior:'smooth'});
+  }
+
+  // ── CSV Export ───────────────────────────────────────────────────
+  function exportCSV() {
+    const name = document.getElementById('tutor-name').value.trim() || 'Tutor';
+    const week = document.getElementById('week-of').value || 'week';
+    const rows = collectRows();
+
+    if (rows.length === 0) {
+      alert('No sessions to export. Please log at least one session first.');
+      return;
+    }
+
+    const headers = ['Tutor Name','Date','Student','Start Time','End Time','Duration (hrs)','In-Person (Travel Fee)','Notes'];
+    const lines = [headers.join(',')];
+
+    rows.forEach(r => {
+      lines.push([
+        `"${name}"`,
+        r.date,
+        `"${r.student}"`,
+        fmt12(r.start),
+        fmt12(r.end),
+        r.hours.toFixed(2),
+        r.travel ? 'YES' : 'NO',
+        `"${r.notes.replace(/"/g, '""')}"`
+      ].join(','));
+    });
+
+    const totalHrs = rows.reduce((a, r) => a + r.hours, 0);
+    const travelCount = rows.filter(r => r.travel).length;
+    lines.push('');
+    lines.push(`"TOTAL HOURS",,,,,${totalHrs.toFixed(2)},,`);
+    lines.push(`"IN-PERSON SESSIONS (need travel fee)",,,,,,${travelCount},`);
+
+    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name.replace(/\s+/g,'_')}_Log_${week}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  document.getElementById('week-of').addEventListener('change', renderDateGrid);
+
+  // Set default week-of to current Sunday
+  (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay());
+    document.getElementById('week-of').value = fmt(d);
+  })();
+
+  renderDateGrid();
+</script>
+</body>
+</html>
