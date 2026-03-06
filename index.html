@@ -265,12 +265,13 @@
 
   <!-- Export -->
   <div class="card">
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="generateSummary()">👁 Preview</button>
-      <button class="btn btn-success" onclick="exportCSV()">⬇ Export to CSV</button>
-    </div>
-    <p class="hint" style="margin-top:10px;text-align:center;">Export opens in Google Sheets — all hours auto-calculated for your CEO.</p>
-  </div>
+<div class="btn-row">
+  <button class="btn btn-secondary" onclick="generateSummary()">👁 Preview</button>
+  <button class="btn btn-success" id="submit-btn" onclick="submitToSheet()">🚀 Submit to Sheet</button>
+</div>
+<p class="hint" style="margin-top:10px;text-align:center;">
+  Responses go directly to the CEO's Google Sheet.
+</p>
 
   <!-- Summary Preview -->
   <div class="card" id="summary-section">
@@ -541,6 +542,60 @@
     section.scrollIntoView({behavior:'smooth'});
   }
 
+ async function submitToSheet() {
+  const name = document.getElementById('tutor-name').value.trim();
+  const week = document.getElementById('week-of').value;
+
+  if (!name || !week) {
+    alert('Please fill in your name and week before submitting.');
+    return;
+  }
+
+  const rows = collectRows();
+  if (rows.length === 0) {
+    alert('No sessions logged yet.');
+    return;
+  }
+
+  const payload = {
+    tutorName: name,
+    weekOf: week,
+    sessions: rows.map(r => ({
+      date: r.date,
+      student: r.student,
+      start: fmt12(r.start),
+      end: fmt12(r.end),
+      hours: r.hours.toFixed(2),
+      inPerson: r.travel,
+      notes: r.notes
+    }))
+  };
+
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcDR-2tMqIU9dd8tewctfqW7BPYQLUkbDwGMNZ29Uo8TtFZ8mxW5VBgxgKxEjGdaR6/exec';
+
+  try {
+    const btn = document.getElementById('submit-btn');
+    btn.textContent = '⏳ Submitting...';
+    btn.disabled = true;
+
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    btn.textContent = '✅ Submitted!';
+    btn.style.background = '#10B981';
+    alert(`Submitted! Your sessions have been sent.`);
+
+  } catch (err) {
+    alert('Something went wrong. Please try again or export CSV as backup.');
+    document.getElementById('submit-btn').textContent = '🚀 Submit to Sheet';
+    document.getElementById('submit-btn').disabled = false;
+  }
+} 
+  
   // ── CSV Export ───────────────────────────────────────────────────
   function exportCSV() {
     const name = document.getElementById('tutor-name').value.trim() || 'Tutor';
