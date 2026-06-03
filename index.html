@@ -449,7 +449,7 @@
     div.innerHTML = `
       <div class="day-panel-header">
         <span class="day-panel-title">${label}</span>
-        <button class="close-day" onclick="toggleDay('${key}', new Date('${key}T00:00:00'))">✕ Close</button>
+        <button class="close-day" onclick="toggleDay('${key}', new Date('${key}T12:00:00'))">✕ Close</button>
       </div>
       <div id="sessions-${key}"></div>
       <button class="add-session-btn" onclick="addSession('${key}')">+ Add Another Session</button>
